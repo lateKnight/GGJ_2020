@@ -6,16 +6,21 @@
 /// </summary>
 public class AiCannon : MonoBehaviour
 {
-
+	[Header("References")]
 	[SerializeField] private GameObject barrel;
 	[SerializeField] private GameObject projectilePrefab;
 	[SerializeField] private Transform projectieSpawn;
+	[Header("Shooting Parameters")]
+	[SerializeField] private float launchForce;
 	[SerializeField] private float timeStep;
 	[SerializeField] private float projectileTravelDuration = 5;
+
 	//Math Stuff
-	private float launchForce;
 	private float launchAngle;
 	private const float gravity = 9.81f;
+
+	//Conditions
+	private bool targetWillBeHit = false;
 
     // Update is called once per frame
     void Update()
@@ -23,6 +28,10 @@ public class AiCannon : MonoBehaviour
 		//Just for Testing
 		//Delete Later
 		CalculateHitPoint(barrel.transform.position, GetInitialVelocity(), timeStep, projectileTravelDuration);
+		if (targetWillBeHit) {
+			return;
+		}
+		launchForce = Mathf.PingPong(Time.time * 100, 100);
 	}
 
 	/// <summary>
@@ -30,7 +39,9 @@ public class AiCannon : MonoBehaviour
 	/// </summary>
 	public void Shoot()
 	{
-		Shoot(GetInitialVelocity());
+		if(targetWillBeHit) {
+			Shoot(GetInitialVelocity());
+		}
 	}
 
 	/// <summary>
@@ -49,7 +60,7 @@ public class AiCannon : MonoBehaviour
 
 	private Vector3 GetInitialVelocity()
 	{
-		return barrel.transform.forward * launchForce; ;
+		return barrel.transform.forward * launchForce;
 	}
 
 	/// <summary>
@@ -80,11 +91,18 @@ public class AiCannon : MonoBehaviour
 			Vector3 pos = GetTrajectoryAtTime(start, startVelocity, t);
 			RaycastHit hit;
 			if (Physics.Linecast(prev, pos, out hit)) {
+				//Check if correct Target will be hit
 				if (hit.collider.CompareTag("Player")) {
 					hit.collider.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
-					Shoot(startVelocity);
+					targetWillBeHit = true;
 					break;
+				} 
+				else {
+					targetWillBeHit = false;
 				}
+			} 
+			else {
+				targetWillBeHit = false;
 			}
 			Debug.DrawLine(prev, pos, Color.red);
 			prev = pos;
